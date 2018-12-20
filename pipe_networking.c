@@ -64,14 +64,16 @@ int server_handshake(int *to_client) {
 
   while(1){
     char lol[100];
-    read(readpt, lol, 100);
+    //read from client
+    if (read(readpt, lol, 100) < 0)
+      printf("bad as well :(");
     printf("input: %s\n", lol);
 
     printf("concatenating:\n");
     strcat(lol,exclam);
     printf("new lol: %s\n\n", lol);
 
-    
+    //write side
     write(writept, lol, BUFFER_SIZE);
     //close(writept);
     
@@ -112,7 +114,6 @@ int client_handshake(int *to_server) {
   printf("client sent private fifo to server\n");
   printf("send1: %s\n", send1);
 
-  //scanf();
   
   //client waits for response (err)
   int readpt = open("pserver", O_RDONLY);
@@ -145,13 +146,21 @@ int client_handshake(int *to_server) {
     scanf("%s", input);
 
     //fgets(input, 100, stdin);
+    //write side
     write(writept, input, 100);
     free(input);
 
     char buf[100];
-    read(readpt, buf, 100);
+    //read side
+    //PROBLEM
+    if (read(readpt, buf, 100) < 1){
+      printf("bad :(\n");
+    }
     printf("Message received: %s\n", buf);
     printf("\n");
+
+    signal(SIGINT, sighandler2);
+    sleep(1);
   }
   return readpt; //read
 }
