@@ -1,12 +1,12 @@
 #include "pipe_networking.h"
 
 
-/* static void sighandler2(int signo){ */
-/*   if (signo == SIGINT){ */
-/*     printf("Exiting due to SIGINT\n"); */
-/*     exit(0); */
-/*   } */
-/* } */
+ static void sighandler2(int signo){ 
+   if (signo == SIGINT){ 
+     printf("Exiting due to SIGINT\n"); 
+     exit(0); 
+   } 
+ } 
 
 /*=========================%
   server_handshake
@@ -52,14 +52,32 @@ int server_handshake(int *to_client) {
   close(writept);
 
   char buf[100];
-
   read(readpt, buf, 100);
   printf("%s\n", buf);
-  close(readpt);
-
-       
-  //signal(SIGINT, sighandler2);
   *to_client = readpt;
+  //handshake completed
+  //close(readpt);
+
+  char exclam[3] = "ha";
+
+
+
+  while(1){
+    char lol[100];
+    read(readpt, lol, 100);
+    printf("input: %s\n", lol);
+
+    printf("concatenating:\n");
+    strcat(lol,exclam);
+    printf("new lol: %s\n\n", lol);
+
+    
+    write(writept, lol, BUFFER_SIZE);
+    //close(writept);
+    
+    signal(SIGINT, sighandler2);
+    sleep(1);
+  }
   
   return writept; //write
 }
@@ -86,13 +104,13 @@ int client_handshake(int *to_server) {
 
   int writept = open("WKP", O_WRONLY);
 
-  //while(1){
 
   
   //3. client connect toserver and sends private fifo
   char *send1 = "pserver";
   write(writept, send1, 100);
   printf("client sent private fifo to server\n");
+  printf("send1: %s\n", send1);
 
   //scanf();
   
@@ -109,7 +127,6 @@ int client_handshake(int *to_server) {
   }
   printf("client received this from server: %s\n", buff);
 
-  close(readpt);
   //readpt is still the same
   
   //remove private fifo
@@ -118,8 +135,23 @@ int client_handshake(int *to_server) {
   char *send = "take that sucker";
   write(writept, send, 100);
   printf("client sent msg to server\n");
-  
+
   *to_server = writept;
-  //}
+
+  
+  while(1){
+    char *input = malloc(10 * sizeof(char *));
+    printf("input: ");
+    scanf("%s", input);
+
+    //fgets(input, 100, stdin);
+    write(writept, input, 100);
+    free(input);
+
+    char buf[100];
+    read(readpt, buf, 100);
+    printf("Message received: %s\n", buf);
+    printf("\n");
+  }
   return readpt; //read
 }

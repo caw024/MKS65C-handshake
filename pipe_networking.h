@@ -15,7 +15,7 @@
 #define HANDSHAKE_BUFFER_SIZE 10
 #define BUFFER_SIZE 1000
 
-//static void sighandler1(int signo);
+static void sighandler2(int signo);
 
 int server_handshake(int *to_client);
 
