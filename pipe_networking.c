@@ -1,6 +1,13 @@
 #include "pipe_networking.h"
 
 
+/* static void sighandler2(int signo){ */
+/*   if (signo == SIGINT){ */
+/*     printf("Exiting due to SIGINT\n"); */
+/*     exit(0); */
+/*   } */
+/* } */
+
 /*=========================%
   server_handshake
   args: int * to_client
@@ -11,27 +18,24 @@
   returns the file descriptor for the upstream pipe.
   =========================*/
 int server_handshake(int *to_client) {
-  int fd;
+
   //1. server created WKP
-  int fdfifo = mkfifo("WKP", 0777);
+  int fdfifo = mkfifo("WKP", 0644);
   if (fdfifo == -1){
     printf("Error: %s\n", strerror(errno));
     exit(1);
   }
 
-  //client_handshake(&fdfifo);
   //server waits for response
-  fd = open("WKP", O_RDONLY);
+  int readpt = open("WKP", O_RDONLY);
 
   printf("to_client: %d\n", *to_client);
 
   
   //4. servers receives client's message
-  char buff[50];
-  printf("alright\n");
-  int k = read(fd, buff, 51*sizeof(char));
+  char buff[100];
+  int k = read(readpt, buff, 100);
   
-  printf("value of k: %d\n", k);
   if (k < 0){
     printf("Error: %s\n", strerror(errno));
     exit(1);
@@ -39,19 +43,25 @@ int server_handshake(int *to_client) {
   printf("%s\n", buff);
 
   //removes WKP
-  close(fdfifo);
-  close(fd);
+  remove("WKP");
 
-  //5. server connects to client's fifo and sends msg
-  printf("sending message\n");
+  //5. server connects to client's fifo and sends msg  
+  char *send = "I got you";
+  int writept = open(buff, O_WRONLY);
+  write(writept, send, BUFFER_SIZE);
+  close(writept);
+
+  char buf[100];
+
+  read(readpt, buf, 100);
+  printf("%s\n", buf);
+  close(readpt);
+
+       
+  //signal(SIGINT, sighandler2);
+  *to_client = readpt;
   
-  char *send = "To client, I received your message. From sender.";
-  fd = open(buff, O_WRONLY);
-  write(fd, send ,BUFFER_SIZE);
-
-
-  
-  return 0;
+  return writept; //write
 }
 
 
@@ -65,7 +75,8 @@ int server_handshake(int *to_client) {
   returns the file descriptor for the downstream pipe.
   =========================*/
 int client_handshake(int *to_server) {
-  int fd;
+  printf("to_server: %d\n", *to_server);
+  
   //2. client creates private server
   int fdfifo = mkfifo("pserver", 0644);
   if (fdfifo == -1){
@@ -73,39 +84,42 @@ int client_handshake(int *to_server) {
     exit(1);
   }
 
-  fd = open("WKP", O_WRONLY);
-  printf("to_server: %d\n", *to_server);
- 
+  int writept = open("WKP", O_WRONLY);
+
+  //while(1){
+
   
   //3. client connect toserver and sends private fifo
   char *send1 = "pserver";
-  write(fd, send1, 50);
-  printf("writing\n");
+  write(writept, send1, 100);
+  printf("client sent private fifo to server\n");
 
-  close(fd);
-  //server_handshake(&fdfifo);
+  //scanf();
   
   //client waits for response (err)
-  fd = open("pserver", O_RDONLY);
+  int readpt = open("pserver", O_RDONLY);
+
 
   //6. client receives server's msg
-  char *buff = malloc(BUFFER_SIZE);
-  if (read(fd, buff, 100) < 0){
+  char buff[100];
+  int k = read(readpt, buff, 100);
+  if (k < 0){
     printf("Error: %s\n", strerror(errno));
     exit(1);
   }
-  printf("%s\n", buff);
+  printf("client received this from server: %s\n", buff);
 
-
-  //7. client sends response to server
-  fd = open(buff, O_WRONLY);
-
-  char *send = "To server, I received your message. From client.";
-  write(fd, send ,BUFFER_SIZE);
-
-  //remove private fifo
-  close(fdfifo);
-
+  close(readpt);
+  //readpt is still the same
   
-  return 0;
+  //remove private fifo
+  remove("pserver");
+
+  char *send = "take that sucker";
+  write(writept, send, 100);
+  printf("client sent msg to server\n");
+  
+  *to_server = writept;
+  //}
+  return readpt; //read
 }

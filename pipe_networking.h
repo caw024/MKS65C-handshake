@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <signal.h>
 #include <errno.h>
 
 #ifndef NETWORKING_H
@@ -13,6 +14,8 @@
 
 #define HANDSHAKE_BUFFER_SIZE 10
 #define BUFFER_SIZE 1000
+
+//static void sighandler1(int signo);
 
 int server_handshake(int *to_client);
 
