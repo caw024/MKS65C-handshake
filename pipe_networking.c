@@ -1,12 +1,12 @@
 #include "pipe_networking.h"
 
 
- static void sighandler2(int signo){ 
-   if (signo == SIGINT){ 
-     printf("Exiting due to SIGINT\n"); 
-     exit(0); 
-   } 
- } 
+static void sighandler2(int signo){ 
+  if (signo == SIGINT){ 
+    printf("Exiting due to SIGINT\n"); 
+    exit(0); 
+  } 
+} 
 
 /*=========================%
   server_handshake
@@ -18,7 +18,10 @@
   returns the file descriptor for the upstream pipe.
   =========================*/
 int server_handshake(int *to_client) {
+  int writept;
 
+
+  //while(1){
   //1. server created WKP
   int fdfifo = mkfifo("WKP", 0644);
   if (fdfifo == -1){
@@ -48,7 +51,7 @@ int server_handshake(int *to_client) {
 
   //5. server connects to client's fifo and sends msg  
   char *send = "I got you";
-  int writept = open(buff, O_WRONLY);
+  writept = open(buff, O_WRONLY);
   write(writept, send, 100);
   //close(writept);
 
@@ -64,34 +67,45 @@ int server_handshake(int *to_client) {
   char exclam[3] = "ha";
 
 
-
   while(1){
     char lol[100];
     //read from client
-    if (read(readpt, lol, 100) < 0)
-      printf("bad as well :(");
-    printf("input: %s\n", lol);
+    if (read(readpt, lol, 100) < 0){
+      printf("error: %s\n", strerror(errno));
+      exit(1);
+    }
+
+    printf("given value: %s\n", lol);
     //close(readpt);
 
-    printf("concatenating:\n");
     strcat(lol,exclam);
     printf("new argument: %s\n", lol);
 
     //write side
     //write to client
-
-    // sleep(1);
-    write(writept, lol, 100);
-    printf("sent\n\n");
-
-
-    //close(writept);
-    
     signal(SIGINT, sighandler2);
+  
+    printf("lmao\n");
+    // sleep(1);
+    if (write(writept, lol, 100) < 0){
+      printf("error: %s\n", strerror(errno));
+      exit(1);
+    }
+    printf("sent\n\n");
   }
+    
+  close(readpt);
+  close(writept);
+  printf("the very end/n");
+
+  //}
   
   return writept; //write
 }
+
+
+
+
 
 
 /*=========================
@@ -158,7 +172,10 @@ int client_handshake(int *to_server) {
 
     //fgets(input, 100, stdin);
     //write side -> read on server
-    write(writept, input, 100);
+    if (write(writept, input, 100) < 0){
+      	printf("error: %s\n", strerror(errno));
+	exit(1);
+    }
     free(input);
 
     char *buf = malloc(100);
@@ -166,13 +183,16 @@ int client_handshake(int *to_server) {
     //PROBLEM
 
     //waits for server to send smth
-    read(readpt, buf, 100);
+    if (read(readpt, buf, 100) < 0){
+      	printf("error: %s\n", strerror(errno));
+	exit(1);
+    }
 
     printf("Message received: %s\n", buf);
     printf("\n");
     free(buf);
 
-    signal(SIGINT, sighandler2);
+    //signal(SIGINT, sighandler2);
   }
   return readpt; //read
 }
