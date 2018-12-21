@@ -26,6 +26,7 @@ int server_handshake(int *to_client) {
     exit(1);
   }
 
+
   //server waits for response
   int readpt = open("WKP", O_RDONLY);
 
@@ -40,7 +41,7 @@ int server_handshake(int *to_client) {
     printf("Error: %s\n", strerror(errno));
     exit(1);
   }
-  printf("%s\n", buff);
+  printf("server received fifo from client: %s\n", buff);
 
   //removes WKP
   remove("WKP");
@@ -48,12 +49,14 @@ int server_handshake(int *to_client) {
   //5. server connects to client's fifo and sends msg  
   char *send = "I got you";
   int writept = open(buff, O_WRONLY);
-  write(writept, send, BUFFER_SIZE);
-  close(writept);
+  write(writept, send, 100);
+  //close(writept);
 
   char buf[100];
   read(readpt, buf, 100);
-  printf("%s\n", buf);
+  printf("handshake completed: %s\n", buf);
+
+ 
   *to_client = readpt;
   //handshake completed
   //close(readpt);
@@ -68,17 +71,23 @@ int server_handshake(int *to_client) {
     if (read(readpt, lol, 100) < 0)
       printf("bad as well :(");
     printf("input: %s\n", lol);
+    //close(readpt);
 
     printf("concatenating:\n");
     strcat(lol,exclam);
-    printf("new lol: %s\n\n", lol);
+    printf("new argument: %s\n", lol);
 
     //write side
-    write(writept, lol, BUFFER_SIZE);
+    //write to client
+
+    // sleep(1);
+    write(writept, lol, 100);
+    printf("sent\n\n");
+
+
     //close(writept);
     
     signal(SIGINT, sighandler2);
-    sleep(1);
   }
   
   return writept; //write
@@ -105,13 +114,11 @@ int client_handshake(int *to_server) {
   }
 
   int writept = open("WKP", O_WRONLY);
-
-
   
   //3. client connect toserver and sends private fifo
   char *send1 = "pserver";
   write(writept, send1, 100);
-  printf("client sent private fifo to server\n");
+  printf("client sent super private fifo to server\n");
   printf("send1: %s\n", send1);
 
   
@@ -130,37 +137,42 @@ int client_handshake(int *to_server) {
 
   //readpt is still the same
   
-  //remove private fifo
-  remove("pserver");
 
   char *send = "take that sucker";
   write(writept, send, 100);
   printf("client sent msg to server\n");
 
+  sleep(1);
+  
+  //remove private fifo
+  remove("pserver"); 
+
   *to_server = writept;
 
-  
+
+
   while(1){
-    char *input = malloc(10 * sizeof(char *));
+    char *input = malloc(100);
     printf("input: ");
     scanf("%s", input);
 
     //fgets(input, 100, stdin);
-    //write side
+    //write side -> read on server
     write(writept, input, 100);
     free(input);
 
-    char buf[100];
+    char *buf = malloc(100);
     //read side
     //PROBLEM
-    if (read(readpt, buf, 100) < 1){
-      printf("bad :(\n");
-    }
+
+    //waits for server to send smth
+    read(readpt, buf, 100);
+
     printf("Message received: %s\n", buf);
     printf("\n");
+    free(buf);
 
     signal(SIGINT, sighandler2);
-    sleep(1);
   }
   return readpt; //read
 }
