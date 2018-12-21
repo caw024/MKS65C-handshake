@@ -4,7 +4,11 @@
 static void sighandler2(int signo){ 
   if (signo == SIGINT){ 
     printf("Exiting due to SIGINT\n"); 
-    exit(0); 
+    if (remove("WKP") == -1){
+      printf("tried to remove WKP: %s\n", strerror(errno));
+      exit(1);
+    }
+    exit(0);
   } 
 } 
 
@@ -20,85 +24,87 @@ static void sighandler2(int signo){
 int server_handshake(int *to_client) {
   int writept;
 
+  while(1){
+    //1. server created WKP
+    int fdfifo = mkfifo("WKP", 0644);
+    if (fdfifo == -1){
+      printf("Error: %s\n", strerror(errno));
+      exit(1);
+    }
 
-  //while(1){
-  //1. server created WKP
-  int fdfifo = mkfifo("WKP", 0644);
-  if (fdfifo == -1){
-    printf("Error: %s\n", strerror(errno));
-    exit(1);
-  }
 
+    //server waits for response
+    int readpt = open("WKP", O_RDONLY);
 
-  //server waits for response
-  int readpt = open("WKP", O_RDONLY);
-
-  printf("to_client: %d\n", *to_client);
+    printf("to_client: %d\n", *to_client);
 
   
-  //4. servers receives client's message
-  char buff[100];
-  int k = read(readpt, buff, 100);
+    //4. servers receives client's message
+    char buff[100];
+    int k = read(readpt, buff, 100);
   
-  if (k < 0){
-    printf("Error: %s\n", strerror(errno));
-    exit(1);
-  }
-  printf("server received fifo from client: %s\n", buff);
+    if (k < 0){
+      printf("Error: %s\n", strerror(errno));
+      exit(1);
+    }
 
-  //removes WKP
-  remove("WKP");
+    remove("WKP");
 
-  //5. server connects to client's fifo and sends msg  
-  char *send = "I got you";
-  writept = open(buff, O_WRONLY);
-  write(writept, send, 100);
-  //close(writept);
+    printf("server received fifo from client: %s\n", buff);
 
-  char buf[100];
-  read(readpt, buf, 100);
-  printf("handshake completed: %s\n", buf);
+    //removes WKP
+
+    //5. server connects to client's fifo and sends msg  
+    char *send = "I got you";
+    writept = open(buff, O_WRONLY);
+    write(writept, send, 100);
+    //close(writept);
+
+    char buf[100];
+    read(readpt, buf, 100);
+    printf("handshake completed: %s\n", buf);
 
  
-  *to_client = readpt;
-  //handshake completed
-  //close(readpt);
-
-  char exclam[3] = "ha";
-
-
-  while(1){
-    char lol[100];
-    //read from client
-    if (read(readpt, lol, 100) < 0){
-      printf("error: %s\n", strerror(errno));
-      exit(1);
-    }
-
-    printf("given value: %s\n", lol);
+    *to_client = readpt;
+    //handshake completed
     //close(readpt);
 
-    strcat(lol,exclam);
-    printf("new argument: %s\n", lol);
+    char exclam[3] = "ha";
+      char lol[100];
 
-    //write side
-    //write to client
-    signal(SIGINT, sighandler2);
+
+    while(1){
+      //read from client
+      if (read(readpt, lol, 100) < 0){
+	printf("error: %s\n", strerror(errno));
+	exit(1);
+      }
+
+      printf("given value: %s\n", lol);
+      //close(readpt);
+
+      strcat(lol,exclam);
+      printf("new argument: %s\n", lol);
+
+      //write side
+      //write to client
+      signal(SIGINT, sighandler2);
   
-    printf("lmao\n");
-    // sleep(1);
-    if (write(writept, lol, 100) < 0){
-      printf("error: %s\n", strerror(errno));
-      exit(1);
-    }
-    printf("sent\n\n");
-  }
-    
-  close(readpt);
-  close(writept);
-  printf("the very end/n");
+      printf("lmao: %d\n", writept);
+      // sleep(1);
+      if (write(writept, lol, 100) < 0){
+	printf("error: %s\n", strerror(errno));
+	exit(1);
+      }
+      printf("sent\n\n");
 
-  //}
+    }
+    
+    close(readpt);
+    close(writept);
+    printf("the very end/n");
+
+  }
   
   return writept; //write
 }
@@ -154,15 +160,14 @@ int client_handshake(int *to_server) {
 
   char *send = "take that sucker";
   write(writept, send, 100);
-  printf("client sent msg to server\n");
-
-  sleep(1);
-  
-  //remove private fifo
   remove("pserver"); 
 
-  *to_server = writept;
+  
+  printf("client sent msg to server\n");
+  
+  //remove private fifo
 
+  *to_server = writept;
 
 
   while(1){
@@ -173,8 +178,8 @@ int client_handshake(int *to_server) {
     //fgets(input, 100, stdin);
     //write side -> read on server
     if (write(writept, input, 100) < 0){
-      	printf("error: %s\n", strerror(errno));
-	exit(1);
+      printf("error: %s\n", strerror(errno));
+      exit(1);
     }
     free(input);
 
@@ -184,15 +189,18 @@ int client_handshake(int *to_server) {
 
     //waits for server to send smth
     if (read(readpt, buf, 100) < 0){
-      	printf("error: %s\n", strerror(errno));
-	exit(1);
+      printf("error: %s\n", strerror(errno));
+      exit(1);
     }
+
+    signal(SIGINT, sighandler2);
+
 
     printf("Message received: %s\n", buf);
     printf("\n");
     free(buf);
-
-    //signal(SIGINT, sighandler2);
   }
+  //signal(SIGINT, sighandler2);
+  
   return readpt; //read
 }
