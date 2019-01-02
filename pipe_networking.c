@@ -70,7 +70,7 @@ int server_handshake(int *to_client) {
     //close(readpt);
 
     char exclam[3] = "ha";
-      char lol[100];
+    char lol[100];
 
 
     while(1){
@@ -90,13 +90,11 @@ int server_handshake(int *to_client) {
       //write to client
       signal(SIGINT, sighandler2);
   
-      printf("lmao: %d\n", writept);
       // sleep(1);
       if (write(writept, lol, 100) < 0){
 	printf("error: %s\n", strerror(errno));
 	exit(1);
       }
-      printf("sent\n\n");
 
     }
     
