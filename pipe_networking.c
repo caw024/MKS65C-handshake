@@ -1,16 +1,16 @@
 #include "pipe_networking.h"
 
 
-static void sighandler2(int signo){ 
-  if (signo == SIGINT){ 
-    printf("Exiting due to SIGINT\n"); 
-    if (remove("WKP") == -1){
-      printf("tried to remove WKP: %s\n", strerror(errno));
-      exit(1);
-    }
-    exit(0);
-  } 
-} 
+/* static void sighandler2(int signo){  */
+/*   if (signo == SIGINT){  */
+/*     printf("Exiting due to SIGINT\n");  */
+/*     if (remove("WKP") == -1){ */
+/*       printf("tried to remove WKP: %s\n", strerror(errno)); */
+/*       exit(1); */
+/*     } */
+/*     exit(0); */
+/*   }  */
+/* }  */
 
 /*=========================%
   server_handshake
@@ -24,7 +24,6 @@ static void sighandler2(int signo){
 int server_handshake(int *to_client) {
   int writept;
 
-  while(1){
     //1. server created WKP
     int fdfifo = mkfifo("WKP", 0644);
     if (fdfifo == -1){
@@ -88,7 +87,7 @@ int server_handshake(int *to_client) {
 
       //write side
       //write to client
-      signal(SIGINT, sighandler2);
+      //signal(SIGINT, sighandler2);
   
       // sleep(1);
       if (write(writept, lol, 100) < 0){
@@ -102,7 +101,7 @@ int server_handshake(int *to_client) {
     close(writept);
     printf("the very end/n");
 
-  }
+  
   
   return writept; //write
 }
@@ -167,38 +166,6 @@ int client_handshake(int *to_server) {
 
   *to_server = writept;
 
-
-  while(1){
-    char *input = malloc(100);
-    printf("input: ");
-    scanf("%s", input);
-
-    //fgets(input, 100, stdin);
-    //write side -> read on server
-    if (write(writept, input, 100) < 0){
-      printf("error: %s\n", strerror(errno));
-      exit(1);
-    }
-    free(input);
-
-    char *buf = malloc(100);
-    //read side
-    //PROBLEM
-
-    //waits for server to send smth
-    if (read(readpt, buf, 100) < 0){
-      printf("error: %s\n", strerror(errno));
-      exit(1);
-    }
-
-    signal(SIGINT, sighandler2);
-
-
-    printf("Message received: %s\n", buf);
-    printf("\n");
-    free(buf);
-  }
-  //signal(SIGINT, sighandler2);
   
   return readpt; //read
 }
