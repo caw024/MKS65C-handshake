@@ -48,7 +48,7 @@ int main() {
       }
     }
     
-    printf("repeat/n");
+    printf("repeat\n");
   }
 }
   
