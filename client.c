@@ -33,7 +33,6 @@ int main() {
 
     //signal(SIGINT, sighandler2);
 
-
     printf("Message received: %s\n", buf);
     printf("\n");
     free(buf);

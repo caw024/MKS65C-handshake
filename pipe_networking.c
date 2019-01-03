@@ -1,16 +1,6 @@
 #include "pipe_networking.h"
 
 
-/* static void sighandler2(int signo){  */
-/*   if (signo == SIGINT){  */
-/*     printf("Exiting due to SIGINT\n");  */
-/*     if (remove("WKP") == -1){ */
-/*       printf("tried to remove WKP: %s\n", strerror(errno)); */
-/*       exit(1); */
-/*     } */
-/*     exit(0); */
-/*   }  */
-/* }  */
 
 /*=========================%
   server_handshake
@@ -64,46 +54,12 @@ int server_handshake(int *to_client) {
     printf("handshake completed: %s\n", buf);
 
  
-    *to_client = readpt;
+    *to_client = writept;
     //handshake completed
     //close(readpt);
 
-    char exclam[3] = "ha";
-    char lol[100];
-
-
-    while(1){
-      //read from client
-      if (read(readpt, lol, 100) < 0){
-	printf("error: %s\n", strerror(errno));
-	exit(1);
-      }
-
-      printf("given value: %s\n", lol);
-      //close(readpt);
-
-      strcat(lol,exclam);
-      printf("new argument: %s\n", lol);
-
-      //write side
-      //write to client
-      //signal(SIGINT, sighandler2);
   
-      // sleep(1);
-      if (write(writept, lol, 100) < 0){
-	printf("error: %s\n", strerror(errno));
-	exit(1);
-      }
-
-    }
-    
-    close(readpt);
-    close(writept);
-    printf("the very end/n");
-
-  
-  
-  return writept; //write
+    return readpt; //write
 }
 
 
@@ -157,15 +113,13 @@ int client_handshake(int *to_server) {
 
   char *send = "take that sucker";
   write(writept, send, 100);
+
+  //remove private fifo
   remove("pserver"); 
 
-  
   printf("client sent msg to server\n");
   
-  //remove private fifo
-
   *to_server = writept;
-
   
   return readpt; //read
 }
